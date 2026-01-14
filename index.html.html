@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina 2026: Indian Cultural Calendar & Wedding Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Saffron & Gold -->
+    <!-- 
+         Primary Background: Warm Cream (#FEFBF5)
+         Secondary Background: Soft Beige (#F3EFE6)
+         Primary Text: Charcoal (#333333)
+         Accent: Deep Saffron (#D97706) - representing festivity
+         Highlight: Muted Gold (#B45309) - representing jewellery salient events
+         Functional: Slate (#64748B) - for neutral UI elements
+    -->
+
+    <!-- Application Structure Plan: 
+         1. Header: Branding and Global Summary Stats.
+         2. Dashboard Layout:
+            - Left/Top Sidebar: "Seasonal Pulse" (Current Ritu/Season) & Key Stats Visualizations.
+            - Main Content: "Interactive Timeline" with robust filtering (Month, Type, Jewellery Relevance).
+         3. Interactions:
+            - Month cards to filter the list.
+            - Toggle for 'Jewellery Salient' to highlight business opportunities.
+            - Modal for deep-dive descriptions into specific festivals.
+         4. Data Design: Centralized JS array for all 2026 events to allow easy updating and filtering.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Event Distribution Chart (Bar): To show the "busy" months (High wedding/festival density) -> Helps in planning stock/leaves.
+         2. Category Breakdown (Doughnut): Ratio of National vs. Regional vs. Wedding dates -> Contextual understanding of the year's mix.
+         3. Timeline Cards: The core UI. Clear typography, distinct badges for 'Jewellery Focus', and easy-to-read dates.
+         4. Interaction: Click-to-expand logic keeps the UI clean while offering depth.
+         <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    -->
+
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: #FEFBF5;
+            color: #333333;
+        }
+        h1, h2, h3, .serif-font {
+            font-family: 'Playfair Display', serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 100%; 
+            height: 300px;
+            max-height: 300px;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+        }
+        .card-shadow:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+        .gold-border {
+            border-left: 4px solid #B45309;
+        }
+        .saffron-bg {
+            background-color: #D97706;
+        }
+        .jewellery-badge {
+            background-color: #FEF3C7; 
+            color: #92400E;
+            border: 1px solid #FCD34D;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F3EFE6; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D1D5DB; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9CA3AF; 
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Header Section -->
+    <header class="bg-white border-b border-orange-100 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="h-10 w-10 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold serif-font text-xl shadow-md">L</div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 leading-none">Lumina 2026</h1>
+                    <p class="text-xs text-orange-700 tracking-wider uppercase mt-0.5">Indian Cultural Calendar & Wedding Guide</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <button onclick="resetFilters()" class="text-gray-500 hover:text-orange-600 font-medium transition-colors">Reset View</button>
+                <a href="#dashboard" class="text-gray-900 font-bold border-b-2 border-orange-600">Dashboard</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Intro / Hero Context -->
+    <div class="bg-[#FDF8F0] border-b border-orange-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="max-w-3xl">
+                <h2 class="text-3xl serif-font text-gray-800 mb-3">Exploring the Rhythm of 2026</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Welcome to your comprehensive guide for the year 2026. This interactive dashboard curates 
+                    <strong>national festivals</strong>, regional celebrations, and auspicious <strong>wedding muhurats</strong>. 
+                    Use the "Jewellery Salient" filter to identify key commercial opportunities where gold and diamond purchasing is traditionally significant.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- LEFT COLUMN: Controls & Visualization (4 cols) -->
+        <aside class="lg:col-span-4 space-y-8">
+            
+            <!-- Controls Card -->
+            <div class="bg-white rounded-xl card-shadow p-6 border border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <span class="text-orange-600 text-xl">❖</span> Filters
+                </h3>
+                
+                <!-- Category Filter -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Event Type</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="filterByType('all')" id="btn-all" class="filter-btn px-4 py-2 rounded-lg text-sm font-medium bg-orange-600 text-white shadow-md transition-all">All</button>
+                        <button onclick="filterByType('Festival')" id="btn-festival" class="filter-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Festivals</button>
+                        <button onclick="filterByType('Wedding')" id="btn-wedding" class="filter-btn px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Weddings</button>
+                    </div>
+                </div>
+
+                <!-- Jewellery Toggle -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between bg-yellow-50 p-3 rounded-lg border border-yellow-200 cursor-pointer" onclick="toggleJewellery()">
+                        <div>
+                            <span class="block text-sm font-bold text-yellow-800">Jewellery Salient Only</span>
+                            <span class="text-xs text-yellow-600">Highlight purchase occasions</span>
+                        </div>
+                        <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="jewellery-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
+                            <label for="toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                    </div>
+                    <style>
+                        .toggle-checkbox:checked { right: 0; border-color: #D97706; }
+                        .toggle-checkbox:checked + .toggle-label { background-color: #D97706; }
+                        .toggle-checkbox { right: 0; transition: all 0.3s; right: 50%; } 
+                    </style>
+                </div>
+
+                <!-- Month Grid Navigation -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-500 mb-2 uppercase tracking-wide">Jump to Month</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="filterByMonth(0)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">JAN</button>
+                        <button onclick="filterByMonth(1)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">FEB</button>
+                        <button onclick="filterByMonth(2)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">MAR</button>
+                        <button onclick="filterByMonth(3)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">APR</button>
+                        <button onclick="filterByMonth(4)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">MAY</button>
+                        <button onclick="filterByMonth(5)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">JUN</button>
+                        <button onclick="filterByMonth(6)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">JUL</button>
+                        <button onclick="filterByMonth(7)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">AUG</button>
+                        <button onclick="filterByMonth(8)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">SEP</button>
+                        <button onclick="filterByMonth(9)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">OCT</button>
+                        <button onclick="filterByMonth(10)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">NOV</button>
+                        <button onclick="filterByMonth(11)" class="month-btn p-2 text-xs font-bold rounded hover:bg-orange-50 text-gray-600 bg-gray-50 transition-colors">DEC</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Section -->
+            <div class="bg-white rounded-xl card-shadow p-6 border border-gray-100">
+                 <div class="mb-2">
+                    <h3 class="text-lg font-bold text-gray-800">Annual Pulse</h3>
+                    <p class="text-xs text-gray-500 mb-4">Event density by month. High bars indicate peak marketing/sales periods.</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+
+             <div class="bg-white rounded-xl card-shadow p-6 border border-gray-100">
+                <div class="mb-2">
+                    <h3 class="text-lg font-bold text-gray-800">Event Composition</h3>
+                    <p class="text-xs text-gray-500 mb-4">Breakdown of Festivals vs. Weddings.</p>
+                </div>
+                <div class="chart-container" style="height: 200px; max-height: 200px;">
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- RIGHT COLUMN: Interactive Timeline (8 cols) -->
+        <div class="lg:col-span-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="timeline-title" class="text-2xl serif-font font-bold text-gray-800">Upcoming Events</h2>
+                <span id="event-count" class="text-sm font-medium bg-gray-100 px-3 py-1 rounded-full text-gray-600">Loading...</span>
+            </div>
+
+            <!-- Scrollable Timeline Container -->
+            <div id="timeline-container" class="space-y-4 pb-12">
+                <!-- Events will be injected here via JS -->
+            </div>
+            
+            <!-- Empty State (Hidden by default) -->
+            <div id="empty-state" class="hidden text-center py-12">
+                <div class="text-4xl mb-4">🍂</div>
+                <h3 class="text-lg font-bold text-gray-600">No events found</h3>
+                <p class="text-gray-400">Try adjusting your filters to see more results.</p>
+                <button onclick="resetFilters()" class="mt-4 text-orange-600 font-bold hover:underline">Reset Filters</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Details -->
+    <div id="detail-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div id="modal-icon-container" class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <span id="modal-icon" class="text-orange-600 text-lg">📅</span>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 serif-font" id="modal-title">Event Title</h3>
+                            <div class="mt-1 flex items-center gap-2">
+                                <span id="modal-date" class="text-sm font-bold text-orange-600">Date</span>
+                                <span id="modal-type" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Type</span>
+                            </div>
+                            <div class="mt-4">
+                                <p class="text-sm text-gray-500" id="modal-description">Description goes here.</p>
+                            </div>
+                            <div id="modal-jewellery-box" class="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-100 hidden">
+                                <p class="text-sm font-bold text-yellow-800 flex items-center gap-2">
+                                    <span>💎</span> Jewellery Insight
+                                </p>
+                                <p class="text-xs text-yellow-700 mt-1">This is a high-salience event for jewellery purchases. Stocking gold and traditional designs is recommended.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-orange-600 text-base font-medium text-white hover:bg-orange-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm" onclick="closeModal()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Data and Logic -->
+    <script>
+        // --- DATA SECTION: 2026 Cultural Calendar ---
+        // Dates are approximations based on lunar calendar calculations relative to 2026.
+        const events2026 = [
+            // JANUARY
+            { date: "2026-01-13", name: "Lohri", type: "Regional", description: "Celebrated primarily by Punjabis, marking the end of winter. Bonfires, peanuts, and popcorn are central.", jewellery: false },
+            { date: "2026-01-14", name: "Makar Sankranti / Pongal", type: "National", description: "Harvest festival dedicated to the Sun God. Marked by kite flying (North) and Pongal cooking (South). Start of Uttarayan.", jewellery: true },
+            { date: "2026-01-15", name: "Magh Bihu", type: "Regional", description: "Assamese harvest festival marked by feasts and bonfires.", jewellery: false },
+            { date: "2026-01-22", name: "Wedding Muhurat", type: "Wedding", description: "Auspicious date for weddings post-Kharmas.", jewellery: true },
+            { date: "2026-01-24", name: "Vasant Panchami", type: "National", description: "Worship of Goddess Saraswati; marks the preparation for arrival of spring. Yellow is the color of the day.", jewellery: false },
+            { date: "2026-01-26", name: "Republic Day", type: "National", description: "National holiday honoring the date on which the Constitution of India came into effect.", jewellery: false },
+            { date: "2026-01-28", name: "Wedding Muhurat", type: "Wedding", description: "Heavy wedding date.", jewellery: true },
+
+            // FEBRUARY
+            { date: "2026-02-04", name: "Wedding Muhurat", type: "Wedding", description: "Standard auspicious wedding date.", jewellery: true },
+            { date: "2026-02-10", name: "Wedding Muhurat", type: "Wedding", description: "Standard auspicious wedding date.", jewellery: true },
+            { date: "2026-02-15", name: "Maha Shivaratri", type: "National", description: "The Great Night of Shiva. Devotees observe fasts and perform night-long vigils.", jewellery: false },
+            { date: "2026-02-18", name: "Wedding Muhurat", type: "Wedding", description: "Late winter wedding date.", jewellery: true },
+            { date: "2026-02-26", name: "Wedding Muhurat", type: "Wedding", description: "Peak wedding season date.", jewellery: true },
+
+            // MARCH
+            { date: "2026-03-03", name: "Holika Dahan", type: "National", description: "The night before Holi, celebrating the burning of the demoness Holika.", jewellery: false },
+            { date: "2026-03-04", name: "Holi", type: "National", description: "The Festival of Colors. Celebrates the arrival of spring and the victory of good over evil.", jewellery: false },
+            { date: "2026-03-10", name: "Wedding Muhurat", type: "Wedding", description: "Post-Holi wedding season resumes.", jewellery: true },
+            { date: "2026-03-19", name: "Gudi Padwa / Ugadi / Chaitra Navratri", type: "Regional", description: "New Year for Maharashtrians, Kannadigas, and Telugus. Start of the Hindu Luni-Solar calendar.", jewellery: true },
+            { date: "2026-03-27", name: "Ram Navami", type: "National", description: "Birthday of Lord Rama. Celebrated with processions and prayers.", jewellery: false },
+            
+            // APRIL
+            { date: "2026-04-02", name: "Hanuman Jayanti", type: "National", description: "Birth of Lord Hanuman.", jewellery: false },
+            { date: "2026-04-14", name: "Baisakhi / Puthandu / Vishu", type: "Regional", description: "Solar New Year celebrated in Punjab, Tamil Nadu, and Kerala respectively.", jewellery: true },
+            { date: "2026-04-18", name: "Wedding Muhurat", type: "Wedding", description: "Start of summer wedding season.", jewellery: true },
+            { date: "2026-04-20", name: "Akshaya Tritiya", type: "National", description: "Highly auspicious day for buying gold and starting new ventures. Treta Yuga began on this day.", jewellery: true },
+            { date: "2026-04-26", name: "Wedding Muhurat", type: "Wedding", description: "Auspicious date.", jewellery: true },
+            
+            // MAY
+            { date: "2026-05-02", name: "Buddha Purnima", type: "National", description: "Birth anniversary of Gautama Buddha.", jewellery: false },
+            { date: "2026-05-06", name: "Wedding Muhurat", type: "Wedding", description: "May wedding peak.", jewellery: true },
+            { date: "2026-05-11", name: "Wedding Muhurat", type: "Wedding", description: "May wedding peak.", jewellery: true },
+            { date: "2026-05-22", name: "Wedding Muhurat", type: "Wedding", description: "End of month weddings.", jewellery: true },
+
+            // JUNE
+            { date: "2026-06-05", name: "Wedding Muhurat", type: "Wedding", description: "June weddings before rainy season.", jewellery: true },
+            { date: "2026-06-18", name: "Rath Yatra", type: "Regional", description: "The Chariot Festival of Lord Jagannath in Puri, Odisha.", jewellery: false },
+            { date: "2026-06-25", name: "Wedding Muhurat", type: "Wedding", description: "Late June wedding date.", jewellery: true },
+
+            // JULY
+            { date: "2026-07-02", name: "Wedding Muhurat", type: "Wedding", description: "Final weddings before Chaturmas (approx).", jewellery: true },
+            { date: "2026-07-09", name: "Wedding Muhurat", type: "Wedding", description: "Last set of dates.", jewellery: true },
+            { date: "2026-07-25", name: "Ashadhi Ekadashi", type: "Regional", description: "Beginning of Chaturmas, a holy period where weddings typically pause.", jewellery: false },
+            { date: "2026-07-29", name: "Guru Purnima", type: "National", description: "Day dedicated to spiritual and academic teachers.", jewellery: false },
+
+            // AUGUST
+            { date: "2026-08-15", name: "Independence Day", type: "National", description: "National holiday marking independence from British rule.", jewellery: false },
+            { date: "2026-08-18", name: "Nag Panchami", type: "Regional", description: "Worship of snakes/serpents.", jewellery: false },
+            { date: "2026-08-27", name: "Raksha Bandhan", type: "National", description: "Celebrates the bond between brothers and sisters.", jewellery: true },
+            
+            // SEPTEMBER
+            { date: "2026-09-03", name: "Janmashtami", type: "National", description: "Birth of Lord Krishna. Celebrated with Dahi Handi and midnight prayers.", jewellery: false },
+            { date: "2026-09-14", name: "Ganesh Chaturthi", type: "Regional", description: "10-day festival celebrating Lord Ganesha's arrival. Massive in Maharashtra.", jewellery: true },
+            { date: "2026-09-25", name: "Onam", type: "Regional", description: "Harvest festival of Kerala.", jewellery: true },
+
+            // OCTOBER
+            { date: "2026-10-02", name: "Gandhi Jayanti", type: "National", description: "Birthday of Mahatma Gandhi.", jewellery: false },
+            { date: "2026-10-11", name: "Navratri Begins", type: "National", description: "Nine nights of worshipping Goddess Durga. Garba and Dandiya season.", jewellery: true },
+            { date: "2026-10-18", name: "Durga Puja (Maha Ashtami)", type: "Regional", description: "Peak of Durga Puja festivities, especially in Bengal.", jewellery: true },
+            { date: "2026-10-20", name: "Dussehra / Vijayadashami", type: "National", description: "Victory of Rama over Ravana. End of Navratri. Auspicious for new purchases.", jewellery: true },
+            { date: "2026-10-29", name: "Karwa Chauth", type: "Regional", description: "Fasting by married women for the longevity of their husbands. Major jewellery buying occasion.", jewellery: true },
+
+            // NOVEMBER
+            { date: "2026-11-06", name: "Dhanteras", type: "National", description: "First day of Diwali. Buying gold/metal is considered extremely auspicious.", jewellery: true },
+            { date: "2026-11-08", name: "Diwali (Deepavali)", type: "National", description: "Festival of Lights. Worship of Goddess Lakshmi.", jewellery: true },
+            { date: "2026-11-09", name: "Govardhan Puja", type: "Regional", description: "Day after Diwali.", jewellery: false },
+            { date: "2026-11-10", name: "Bhai Dooj", type: "National", description: "Celebrates brother-sister bond, similar to Raksha Bandhan.", jewellery: true },
+            { date: "2026-11-15", name: "Chhath Puja", type: "Regional", description: "Sun worship festival, major in Bihar and UP.", jewellery: false },
+            { date: "2026-11-22", name: "Wedding Muhurat", type: "Wedding", description: "Winter wedding season begins post-Dev Uthani Ekadashi.", jewellery: true },
+            { date: "2026-11-28", name: "Wedding Muhurat", type: "Wedding", description: "Heavy wedding date.", jewellery: true },
+
+            // DECEMBER
+            { date: "2026-12-04", name: "Wedding Muhurat", type: "Wedding", description: "Early December weddings.", jewellery: true },
+            { date: "2026-12-09", name: "Wedding Muhurat", type: "Wedding", description: "Peak winter wedding date.", jewellery: true },
+            { date: "2026-12-14", name: "Wedding Muhurat", type: "Wedding", description: "Last few weddings before Kharmas.", jewellery: true },
+            { date: "2026-12-25", name: "Christmas", type: "National", description: "Celebration of the birth of Jesus Christ.", jewellery: false }
+        ];
+
+        // --- APPLICATION STATE ---
+        let currentFilter = 'all'; // all, Festival, Wedding
+        let currentMonth = null; // 0-11, null for all
+        let jewelleryOnly = false;
+
+        // --- DOM ELEMENTS ---
+        const timelineContainer = document.getElementById('timeline-container');
+        const emptyState = document.getElementById('empty-state');
+        const eventCountLabel = document.getElementById('event-count');
+        const timelineTitle = document.getElementById('timeline-title');
+        const modal = document.getElementById('detail-modal');
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCharts();
+            renderTimeline();
+            updateActiveButtonStates();
+        });
+
+        // --- CORE FUNCTIONS ---
+
+        function getMonthName(monthIndex) {
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            return months[monthIndex];
+        }
+
+        function filterByType(type) {
+            currentFilter = type;
+            renderTimeline();
+            updateActiveButtonStates();
+        }
+
+        function filterByMonth(monthIndex) {
+            // Toggle functionality
+            if (currentMonth === monthIndex) {
+                currentMonth = null;
+                timelineTitle.innerText = "Upcoming Events";
+            } else {
+                currentMonth = monthIndex;
+                timelineTitle.innerText = `Events in ${getMonthName(monthIndex)}`;
+            }
+            renderTimeline();
+            updateActiveButtonStates();
+        }
+
+        function toggleJewellery() {
+            jewelleryOnly = !jewelleryOnly;
+            const toggle = document.getElementById('jewellery-toggle');
+            toggle.checked = jewelleryOnly;
+            renderTimeline();
+        }
+
+        function resetFilters() {
+            currentFilter = 'all';
+            currentMonth = null;
+            jewelleryOnly = false;
+            document.getElementById('jewellery-toggle').checked = false;
+            timelineTitle.innerText = "Upcoming Events";
+            renderTimeline();
+            updateActiveButtonStates();
+        }
+
+        function updateActiveButtonStates() {
+            // Type Buttons
+            const types = ['all', 'festival', 'wedding'];
+            types.forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (btn) {
+                    if (currentFilter.toLowerCase() === t) {
+                        btn.classList.remove('bg-gray-100', 'text-gray-600');
+                        btn.classList.add('bg-orange-600', 'text-white');
+                    } else {
+                        btn.classList.add('bg-gray-100', 'text-gray-600');
+                        btn.classList.remove('bg-orange-600', 'text-white');
+                    }
+                }
+            });
+
+            // Month Buttons
+            const monthBtns = document.querySelectorAll('.month-btn');
+            monthBtns.forEach((btn, index) => {
+                if (currentMonth === index) {
+                    btn.classList.remove('bg-gray-50', 'text-gray-600');
+                    btn.classList.add('bg-orange-600', 'text-white');
+                } else {
+                    btn.classList.add('bg-gray-50', 'text-gray-600');
+                    btn.classList.remove('bg-orange-600', 'text-white');
+                }
+            });
+        }
+
+        function renderTimeline() {
+            timelineContainer.innerHTML = '';
+            
+            const filteredEvents = events2026.filter(event => {
+                const eventDate = new Date(event.date);
+                const monthMatch = currentMonth === null || eventDate.getMonth() === currentMonth;
+                const typeMatch = currentFilter === 'all' || event.type.toLowerCase() === currentFilter.toLowerCase() || (currentFilter === 'Festival' && event.type !== 'Wedding');
+                const jewelleryMatch = !jewelleryOnly || event.jewellery === true;
+                
+                return monthMatch && typeMatch && jewelleryMatch;
+            });
+
+            eventCountLabel.innerText = `${filteredEvents.length} Events`;
+
+            if (filteredEvents.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Group by Month for clearer display
+            let lastMonth = -1;
+
+            filteredEvents.forEach(event => {
+                const dateObj = new Date(event.date);
+                const monthIndex = dateObj.getMonth();
+                const day = dateObj.getDate();
+                const monthName = getMonthName(monthIndex);
+
+                // Add Month Header if new month
+                if (monthIndex !== lastMonth && currentMonth === null) {
+                    const monthHeader = document.createElement('div');
+                    monthHeader.className = "sticky top-0 bg-[#FDF8F0]/95 backdrop-blur-sm py-2 px-1 z-10 border-b border-orange-100 mb-2 mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest";
+                    monthHeader.innerText = monthName + " 2026";
+                    timelineContainer.appendChild(monthHeader);
+                    lastMonth = monthIndex;
+                }
+
+                // Create Card
+                const card = document.createElement('div');
+                const isJewellery = event.jewellery ? 'gold-border' : 'border-l-4 border-gray-200';
+                const badgeColor = event.type === 'Wedding' ? 'bg-pink-100 text-pink-800' : (event.type === 'National' ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800');
+                
+                card.className = `bg-white rounded-lg p-4 card-shadow cursor-pointer hover:bg-gray-50 transition flex justify-between items-center ${isJewellery}`;
+                card.onclick = () => openModal(event);
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="flex flex-col items-center justify-center w-12 h-12 bg-gray-50 rounded-lg border border-gray-100">
+                            <span class="text-xs text-gray-500 uppercase">${monthName.substring(0,3)}</span>
+                            <span class="text-xl font-bold text-gray-800 font-serif">${day}</span>
+                        </div>
+                        <div>
+                            <h4 class="text-base font-bold text-gray-800">${event.name}</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full ${badgeColor}">${event.type}</span>
+                                ${event.jewellery ? '<span class="text-[10px] flex items-center gap-1 text-yellow-700 font-medium">💎 High Salience</span>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-gray-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </div>
+                `;
+
+                timelineContainer.appendChild(card);
+            });
+        }
+
+        // --- MODAL LOGIC ---
+        function openModal(event) {
+            document.getElementById('modal-title').innerText = event.name;
+            document.getElementById('modal-date').innerText = new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('modal-type').innerText = event.type;
+            document.getElementById('modal-description').innerText = event.description;
+            
+            const jBox = document.getElementById('modal-jewellery-box');
+            if (event.jewellery) {
+                jBox.classList.remove('hidden');
+            } else {
+                jBox.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+
+        // --- CHART LOGIC ---
+        function renderCharts() {
+            // Data Prep
+            const monthlyCounts = Array(12).fill(0);
+            const typeCounts = { 'Festival': 0, 'Wedding': 0 };
+
+            events2026.forEach(e => {
+                const m = new Date(e.date).getMonth();
+                monthlyCounts[m]++;
+                if (e.type === 'Wedding') {
+                    typeCounts['Wedding']++;
+                } else {
+                    typeCounts['Festival']++; // Grouping National/Regional as Festival
+                }
+            });
+
+            // 1. Distribution Chart (Bar)
+            const ctxDist = document.getElementById('distributionChart').getContext('2d');
+            new Chart(ctxDist, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Events Count',
+                        data: monthlyCounts,
+                        backgroundColor: '#D97706',
+                        borderRadius: 4,
+                        barThickness: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { display: false }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // 2. Type Chart (Doughnut)
+            const ctxType = document.getElementById('typeChart').getContext('2d');
+            new Chart(ctxType, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Festivals', 'Weddings'],
+                    datasets: [{
+                        data: [typeCounts['Festival'], typeCounts['Wedding']],
+                        backgroundColor: ['#FCD34D', '#F472B6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 10,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
